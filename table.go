@@ -21,11 +21,19 @@ const (
 )
 
 const (
-	CENTER  = "+"
-	ROW     = "-"
-	COLUMN  = "|"
-	SPACE   = " "
-	NEWLINE = "\n"
+	LEFTTOP      = "┌"
+	LEFTMIDDLE   = "├"
+	LEFTBottom   = "└"
+	RIGHTTOP     = "┐"
+	RIGHTMIDDLE  = "┤"
+	RIGHTBottom  = "┘"
+	BOTTOMMIDDLE = "┴"
+	TOPMIDDLE    = "┬"
+	CENTER       = "┼"
+	ROW          = "─"
+	COLUMN       = "│"
+	SPACE        = " "
+	NEWLINE      = "\n"
 )
 
 const (
@@ -48,21 +56,31 @@ type Border struct {
 }
 
 type Table struct {
-	out            io.Writer
-	rows           [][]string
-	lines          [][][]string
-	cs             map[int]int
-	rs             map[int]int
-	headers        []string
-	footers        []string
-	caption        bool
-	captionText    string
-	autoFmt        bool
-	autoWrap       bool
-	mW             int
-	pCenter        string
-	pRow           string
-	pColumn        string
+	out         io.Writer
+	rows        [][]string
+	lines       [][][]string
+	cs          map[int]int
+	rs          map[int]int
+	headers     []string
+	footers     []string
+	caption     bool
+	captionText string
+	autoFmt     bool
+	autoWrap    bool
+	mW          int
+	pCenter     string
+	pRow        string
+	pColumn     string
+
+	pLeftTop      string
+	pLeftBottom   string
+	pLeftMiddle   string
+	pRightTop     string
+	pRightBottom  string
+	pRightMiddle  string
+	pBottomMiddle string
+	pTopMiddle    string
+
 	tColumn        int
 	tRow           int
 	hAlign         int
@@ -84,21 +102,31 @@ type Table struct {
 // Take io.Writer Directly
 func NewWriter(writer io.Writer) *Table {
 	t := &Table{
-		out:           writer,
-		rows:          [][]string{},
-		lines:         [][][]string{},
-		cs:            make(map[int]int),
-		rs:            make(map[int]int),
-		headers:       []string{},
-		footers:       []string{},
-		caption:       false,
-		captionText:   "Table caption.",
-		autoFmt:       true,
-		autoWrap:      true,
-		mW:            MAX_ROW_WIDTH,
-		pCenter:       CENTER,
-		pRow:          ROW,
-		pColumn:       COLUMN,
+		out:         writer,
+		rows:        [][]string{},
+		lines:       [][][]string{},
+		cs:          make(map[int]int),
+		rs:          make(map[int]int),
+		headers:     []string{},
+		footers:     []string{},
+		caption:     false,
+		captionText: "Table caption.",
+		autoFmt:     true,
+		autoWrap:    true,
+		mW:          MAX_ROW_WIDTH,
+		pCenter:     CENTER,
+		pRow:        ROW,
+		pColumn:     COLUMN,
+
+		pLeftTop:      LEFTTOP,
+		pLeftBottom:   LEFTBottom,
+		pLeftMiddle:   LEFTMIDDLE,
+		pRightTop:     RIGHTTOP,
+		pRightBottom:  RIGHTBottom,
+		pRightMiddle:  RIGHTMIDDLE,
+		pBottomMiddle: BOTTOMMIDDLE,
+		pTopMiddle:    TOPMIDDLE,
+
 		tColumn:       -1,
 		tRow:          -1,
 		hAlign:        ALIGN_DEFAULT,
@@ -119,7 +147,7 @@ func NewWriter(writer io.Writer) *Table {
 // Render table output
 func (t *Table) Render() {
 	if t.borders.Top {
-		t.printLine(true)
+		t.printLineTop(true)
 	}
 	t.printHeading()
 	if t.autoMergeCells {
@@ -128,7 +156,7 @@ func (t *Table) Render() {
 		t.printRows()
 	}
 	if !t.rowLine && t.borders.Bottom {
-		t.printLine(true)
+		t.printLineBottom(true)
 	}
 	t.printFooter()
 
@@ -318,6 +346,80 @@ func (t *Table) printLine(nl bool) {
 	}
 }
 
+// Print line based on row width
+func (t *Table) printLineTop(nl bool) {
+	fmt.Fprint(t.out, t.pLeftTop)
+	for i := 0; i < len(t.cs); i++ {
+		v := t.cs[i]
+
+		if i != (len(t.cs) - 1) {
+			fmt.Fprintf(t.out, "%s%s%s%s",
+				t.pRow,
+				strings.Repeat(string(t.pRow), v),
+				t.pRow,
+				t.pTopMiddle)
+		} else {
+			fmt.Fprintf(t.out, "%s%s%s%s",
+				t.pRow,
+				strings.Repeat(string(t.pRow), v),
+				t.pRow,
+				t.pRightTop)
+		}
+	}
+	if nl {
+		fmt.Fprint(t.out, t.newLine)
+	}
+}
+
+// Print line based on row width
+func (t *Table) printLineMid(nl bool) {
+	fmt.Fprint(t.out, t.pLeftMiddle)
+	for i := 0; i < len(t.cs); i++ {
+		v := t.cs[i]
+		if i != (len(t.cs) - 1) {
+			fmt.Fprintf(t.out, "%s%s%s%s",
+				t.pRow,
+				strings.Repeat(string(t.pRow), v),
+				t.pRow,
+				t.pCenter)
+		} else {
+			fmt.Fprintf(t.out, "%s%s%s%s",
+				t.pRow,
+				strings.Repeat(string(t.pRow), v),
+				t.pRow,
+				t.pRightMiddle)
+		}
+	}
+	if nl {
+		fmt.Fprint(t.out, t.newLine)
+	}
+}
+
+// Print line based on row width
+func (t *Table) printLineBottom(nl bool) {
+	fmt.Fprint(t.out, t.pLeftBottom)
+	for i := 0; i < len(t.cs); i++ {
+		v := t.cs[i]
+
+		if i != (len(t.cs) - 1) {
+			fmt.Fprintf(t.out, "%s%s%s%s",
+				t.pRow,
+				strings.Repeat(string(t.pRow), v),
+				t.pRow,
+				t.pBottomMiddle)
+		} else {
+			fmt.Fprintf(t.out, "%s%s%s%s",
+				t.pRow,
+				strings.Repeat(string(t.pRow), v),
+				t.pRow,
+				t.pRightBottom)
+		}
+	}
+	if nl {
+		fmt.Fprint(t.out, t.newLine)
+	}
+}
+
 // Print line based on row width with our without cell separator
 func (t *Table) printLineOptionalCellSeparators(nl bool, displayCellSeparator []bool) {
 	fmt.Fprint(t.out, t.pCenter)
@@ -404,7 +506,7 @@ func (t *Table) printHeading() {
 	// Next line
 	fmt.Fprint(t.out, t.newLine)
 	if t.hdrLine {
-		t.printLine(true)
+		t.printLineMid(true)
 	}
 }
 
@@ -639,7 +741,7 @@ func (t *Table) printRow(columns [][]string, colKey int) {
 	}
 
 	if t.rowLine {
-		t.printLine(true)
+		t.printLineMid(true)
 	}
 }
 
